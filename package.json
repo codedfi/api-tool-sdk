@@ -1,5 +1,6 @@
 {
   "name": "@chainge/api-tool-sdk",
+  "private": false,
   "version": "0.0.1",
   "type": "module",
   "files": [
@@ -8,20 +9,23 @@
   "main": "./dist/api-tool-sdk.umd.cjs",
   "module": "./dist/api-tool-sdk.js",
   "types": "./dist/index.d.ts",
+  "exports": {
+    "types": "./dist/index.d.ts",
+    "import": "./dist/api-tool-sdk.js",
+    "require": "./dist/api-tool-sdk.umd.cjs"
+  },
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
-    "preview": "vite preview"
+    "build": "tsc && vite build"
   },
   "devDependencies": {
-    "@types/node": "^22.5.4",
-    "typescript": "^5.5.3",
-    "vite": "^5.4.1",
-    "vite-plugin-dts": "^4.1.0"
+    "typescript": "^5.4.5",
+    "vite": "^5.2.10",
+    "vite-plugin-dts": "^4.2.1"
   },
   "dependencies": {
     "axios": "^1.7.7",
     "bignumber.js": "^9.1.2",
-    "viem": "^2.21.2"
+    "viem": "^2.21.12"
   }
 }
