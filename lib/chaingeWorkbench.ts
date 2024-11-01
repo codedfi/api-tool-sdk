@@ -195,7 +195,7 @@ class ChaingeWorkbench {
             const gasFeeHr = formatUnits(gasFeeBI, toDecimal)
             // const usdGasFee = BigNumber(gasFeeHr).multipliedBy(priceBN).toString()
 
-            const exportStr = `1_${outAmountBI.toString()};2_${params.channelFeeRate};3_2;4_${outAmountBI.toString()};5_${toChain}`;
+            const exportStr = `1_${realOutAmountBI.toString()};2_${params.channelFeeRate};3_2;4_${realOutAmountBI.toString()};5_${toChain}`;
             const shortOrderStr = `${this.channel}:${toChain}:${toTokenInfo.address}:${toUserAddress}:0:${exportStr}`
             const orderHex = toHex(shortOrderStr);
 
@@ -286,17 +286,15 @@ class ChaingeWorkbench {
             }
 
             let isDirect = false 
-            // && executChainInfo.nickName === fromChain
-            if(fromChain === toChain) {
-                if(chain !== '32659') {
-                    // direction 
-                    isDirect = true
-                    if(!fromChainInfo.builtInSwapProxy) {
-                        return {
-                            code: 1300,
-                            msg: ErrorCode['1300'],
-                            data: null
-                        }
+            // 
+            if(fromChain === toChain && executChainInfo.nickName === fromChain) {
+                // direction 
+                isDirect = true
+                if(!fromChainInfo.builtInSwapProxy) {
+                    return {
+                        code: 1300,
+                        msg: ErrorCode['1300'],
+                        data: null
                     }
                 }
             }

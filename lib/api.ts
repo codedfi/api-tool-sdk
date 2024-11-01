@@ -1,6 +1,8 @@
 import axios from "./request/index";
 import { AggregateQuoteParams, AggregateSwapParams, ApiResponse, BalanceParams, BridgeQuoteParams, Chain, PriceParams, Token, TokenContract, TokenInfoParams } from "./type";
 import { ICON_URL } from "./utils";
+// const supportNevmChain = ['SOL', 'KAS', 'KOIN', 'TRX', 'APT']
+const supportNevmChain: string[] = []
 
 // https://api2.chainge.finance/v1/getChain
 export const getChain = async () => {
@@ -14,7 +16,7 @@ export const getChain = async () => {
                 return result
             }
             const supporChain = chainList.filter(
-                (item: Chain) => !(item.delisted || item.disabled) && [1].includes(item.family)
+                (item: Chain) => !(item.delisted || item.disabled) && ([1].includes(item.family) || supportNevmChain.includes(item.nickName))
             );
             supporChain.forEach((item: Chain) => {
                 // format pairToken
