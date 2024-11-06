@@ -181,3 +181,5 @@ export interface TokenInfoResponse {
 	telegram?: any;
 	docs: string[];
 }
+
+export type NevmVaultType = 'SOL' | 'KAS' | 'KOIN' | 'TRX' | 'APT' | 'RADIX'

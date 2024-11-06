@@ -1,8 +1,7 @@
 import axios from "./request/index";
-import { AggregateQuoteParams, AggregateSwapParams, ApiResponse, BalanceParams, BridgeQuoteParams, Chain, PriceParams, Token, TokenContract, TokenInfoParams } from "./type";
-import { ICON_URL } from "./utils";
-// const supportNevmChain = ['SOL', 'KAS', 'KOIN', 'TRX', 'APT']
-const supportNevmChain: string[] = []
+import { AggregateQuoteParams, AggregateSwapParams, ApiResponse, BalanceParams, BridgeQuoteParams, Chain, NevmVaultType, PriceParams, Token, TokenContract, TokenInfoParams } from "./type";
+import { ICON_URL, NevmVault } from "./utils";
+export const supportNevmChain: NevmVaultType[]  = ['SOL', 'KAS', 'KOIN', 'TRX', 'APT', 'RADIX']
 
 // https://api2.chainge.finance/v1/getChain
 export const getChain = async () => {
@@ -16,7 +15,7 @@ export const getChain = async () => {
                 return result
             }
             const supporChain = chainList.filter(
-                (item: Chain) => !(item.delisted || item.disabled) && ([1].includes(item.family) || supportNevmChain.includes(item.nickName))
+                (item: Chain) => !(item.delisted || item.disabled) && ([1].includes(item.family) || supportNevmChain.includes(item.nickName as NevmVaultType))
             );
             supporChain.forEach((item: Chain) => {
                 // format pairToken
@@ -71,6 +70,28 @@ export const getAssets = async () => {
         return result
     }
     result.data = []
+    return result
+};
+
+// https://api2.chainge.finance/v1/getVaultAddress
+export const getVaultAddress = async () => {
+    const result: Partial<ApiResponse> = await axios.get("/getVaultAddress");
+    if(result && result.code === 0) {
+        const { data } = (result || {}) as Partial<ApiResponse>
+        if(data) {
+            let supportNevmVaultAddr: {[key in NevmVault]?: string} = {}
+            const { list = {} } = data as {list: {[key in NevmVault]?: string}}
+            supportNevmChain.forEach((item: NevmVaultType) => {
+                const value = list[item]
+                if(value) {
+                    supportNevmVaultAddr[item] = value
+                }
+            })
+            result.data = supportNevmVaultAddr
+            return result
+        }
+    }
+    result.data = {}
     return result
 };
 

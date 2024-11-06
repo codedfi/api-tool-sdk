@@ -1,7 +1,18 @@
+import BigNumber from "bignumber.js";
+
 export const ICON_URL = 'https://icon.chainge.finance/'
 
 export enum StoreKey {
     ImportedList = 'chainge.imported'
+}
+
+export enum NevmVault {
+    SOL = 'SOL',
+    KAS = 'KAS',
+    KOIN = 'KOIN',
+    TRX = 'TRX',
+    APT = 'APT',
+    RADIX = 'RADIX'
 }
 
 export const checkIsBrowser = (): boolean => {
@@ -40,4 +51,10 @@ export const removeStore = (key: string) => {
         throw new Error('key is empty')
     }
     window.localStorage.removeItem(key)
+}
+
+export const formatSlippageToPerTenThousand = (slippage: string) => {
+    let slippageNumBI = BigNumber(slippage)
+    slippageNumBI = slippageNumBI.multipliedBy(BigNumber(100))
+    return slippageNumBI.toFixed(0)
 }

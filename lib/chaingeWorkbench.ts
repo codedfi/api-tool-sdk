@@ -1,9 +1,9 @@
 import BigNumber from "bignumber.js"
-import { checkOrder, getAggregateQuote, getAggregateSwap, getAssets, getBridgeQuote, getChain, getOrderIdByHash, getTokenInfo } from "./api"
-import { Token, Chain, BridgeQuoteParams, BridgeQuoteResponse, AggregateQuoteParams, AggregateQuoteResponse, AggregateSwapParams, AggregateSwapResponse, OrderIdByHashResponse, CheckOrderResponse, ChaingeWorkbenchConfig, TokenInfoParams, TokenContract, TokenInfoResponse } from "./type"
+import { checkOrder, getAggregateQuote, getAggregateSwap, getAssets, getBridgeQuote, getChain, getOrderIdByHash, getTokenInfo, getVaultAddress, supportNevmChain } from "./api"
+import { Token, Chain, BridgeQuoteParams, BridgeQuoteResponse, AggregateQuoteParams, AggregateQuoteResponse, AggregateSwapParams, AggregateSwapResponse, OrderIdByHashResponse, CheckOrderResponse, ChaingeWorkbenchConfig, TokenInfoParams, TokenContract, TokenInfoResponse, NevmVaultType } from "./type"
 import { formatUnits, parseUnits, toHex } from "viem"
 import { ErrorCode } from "."
-import { getStore, setStore, StoreKey } from "./utils"
+import { formatSlippageToPerTenThousand, getStore, NevmVault, setStore, StoreKey } from "./utils"
 
 class ChaingeWorkbench {
     channel: string = 'chainge'
@@ -11,7 +11,8 @@ class ChaingeWorkbench {
 
     inited: boolean = false
     supportChains: Chain[] = []
-    supportTokens: Token[] = [] 
+    supportTokens: Token[] = []
+    supportNevmVault: {[key in NevmVault]?: string} = {}
     constructor(config?: ChaingeWorkbenchConfig) {
         const { channel = 'chainge', globalChannelFeeRate = '0' } = config || {}
         this.channel = channel
@@ -21,12 +22,13 @@ class ChaingeWorkbench {
     }
     
     private async _init() {
-        const requestList = [getChain(), getAssets()]
+        const requestList = [getChain(), getAssets(), getVaultAddress()]
         const result = await Promise.all(requestList)
         if(result.length) {
-            const [chains, tokens] = result
+            const [chains, tokens, vaultAddress] = result
             this.supportChains = chains.data as Chain[]
             this.supportTokens = tokens.data as Token[]
+            this.supportNevmVault = vaultAddress.data as {[key in NevmVault]?: string}
 
             if(this.supportChains.length && this.supportTokens.length) {
                 this.inited = true
@@ -204,6 +206,20 @@ class ChaingeWorkbench {
 
             const feeUnit = toTokenInfo.symbol
 
+            let contractArgs: any = []
+            let proxy = ''
+            let contractMethod = ''
+
+            if(params.fromChain !== 'TRX' && supportNevmChain.includes(params.fromChain as NevmVaultType)) {
+                contractMethod = 'transfer'
+                contractArgs = shortOrderStr
+                proxy = this.supportNevmVault[params.fromChain as NevmVaultType] as string
+            } else {
+                contractMethod = 'vaultOut'
+                contractArgs = [fromTokenAddress, amount, burnable, orderHex]
+                proxy = fromChainInfo.builtInMinterProxyV2
+            }
+
             return {
                 code: 0,
                 msg: 'success',
@@ -222,10 +238,9 @@ class ChaingeWorkbench {
                     serviceFeeRate,
                     price,
 
-                    
-                    proxy: fromChainInfo.builtInMinterProxyV2,
-                    contractMethod: 'vaultOut',
-                    contractArgs: [fromTokenAddress, amount, burnable, orderHex]
+                    proxy: proxy,
+                    contractMethod: contractMethod,
+                    contractArgs: contractArgs
                 }
             }
         }
@@ -252,6 +267,10 @@ class ChaingeWorkbench {
         }
         if(!params?.channelFeeRate) {
             params['channelFeeRate'] = this.channelFeeRate
+        }
+        if(params.fromChain === params.toChain && params.fromChain === 'SOL') {
+            params.direct = true
+            params.slippage = formatSlippageToPerTenThousand(customSlippage || '1')
         }
         const quoteResult = await getAggregateQuote(params)
         if(quoteResult && quoteResult.code === 0) {
@@ -289,18 +308,20 @@ class ChaingeWorkbench {
             // 
             if(fromChain === toChain && executChainInfo.nickName === fromChain) {
                 // direction 
-                isDirect = true
-                if(!fromChainInfo.builtInSwapProxy) {
-                    return {
-                        code: 1300,
-                        msg: ErrorCode['1300'],
-                        data: null
+                if(!supportNevmChain.includes(params.fromChain as NevmVaultType)) {
+                    isDirect = true
+                    if(!fromChainInfo.builtInSwapProxy) {
+                        return {
+                            code: 1300,
+                            msg: ErrorCode['1300'],
+                            data: null
+                        }
                     }
                 }
             }
 
             const tempSlippage = customSlippage || slippage
-            const slippageTenThousand = +tempSlippage * 0.01 * 10000 + ''
+            const slippageTenThousand = formatSlippageToPerTenThousand(tempSlippage)
 
             const toDecimal = +toTokenInfo.decimals
         
@@ -325,7 +346,7 @@ class ChaingeWorkbench {
             // const fromTokenAddress = fromTokenInfo.address
 
             const feeUnit = toTokenInfo.symbol
-            let contractArgs: unknown[] = []
+            let contractArgs: any = []
             let proxy = ''
             let contractMethod = ''
 
@@ -355,9 +376,19 @@ class ChaingeWorkbench {
                     return swapResponse
                 }
             } else {
-                contractArgs = [fromTokenAddress, fromAmount, burnable, orderHex]
-                contractMethod = 'vaultOut'
-                proxy= fromChainInfo.builtInMinterProxyV2
+                if(params.fromChain !== 'TRX' && supportNevmChain.includes(params.fromChain as NevmVaultType)) {
+                    if(params.fromChain === 'SOL') {
+                        contractArgs = `${toHex(aggregator)}_${toHex(routeSummary)}`
+                    } else {
+                        contractArgs = shortOrderStr
+                    }
+                    contractMethod = 'transfer'
+                    proxy = this.supportNevmVault[params.fromChain as NevmVaultType] as string
+                } else {
+                    contractArgs = [fromTokenAddress, fromAmount, burnable, orderHex]
+                    contractMethod = 'vaultOut'
+                    proxy= fromChainInfo.builtInMinterProxyV2
+                }
             }
 
             return {
