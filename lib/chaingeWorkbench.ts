@@ -212,8 +212,12 @@ class ChaingeWorkbench {
 
             if(params.fromChain !== 'TRX' && supportNevmChain.includes(params.fromChain as NevmVaultType)) {
                 contractMethod = 'transfer'
-                contractArgs = shortOrderStr
                 proxy = this.supportNevmVault[params.fromChain as NevmVaultType] as string
+                if(params.fromChain === 'KAS') {
+                    contractArgs = exportStr
+                } else {
+                    contractArgs = shortOrderStr
+                }
             } else {
                 contractMethod = 'vaultOut'
                 contractArgs = [fromTokenAddress, amount, burnable, orderHex]
@@ -379,6 +383,8 @@ class ChaingeWorkbench {
                 if(params.fromChain !== 'TRX' && supportNevmChain.includes(params.fromChain as NevmVaultType)) {
                     if(params.fromChain === 'SOL') {
                         contractArgs = `${toHex(aggregator)}_${toHex(routeSummary)}`
+                    } else if(params.fromChain === 'KAS') {
+                        contractArgs = exportStr
                     } else {
                         contractArgs = shortOrderStr
                     }

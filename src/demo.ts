@@ -9,8 +9,8 @@ const fnTestGetBridgeQuote = async () => {
     const params = {
         amount: '1000000000',
         symbol: 'USDT',
-        fromChain: 'FSN',
-        toChain: 'BNB',
+        fromChain: 'KAS',
+        toChain: 'FSN',
     }
     const result = await chaingeWorkbench.getBridgeQuote(params, '0x42a6685ef29886Cbcb595Aa903f00dea0d1787d8')    
     console.log('Bridge Quote Result:', result)
@@ -18,13 +18,13 @@ const fnTestGetBridgeQuote = async () => {
 
 const fnTestGetAggregateQuote = async () => {
     const params = {
-        fromAmount: '1000000000',
-        fromTokenAddress: '0x8a20c13b42d7fe418f10f922f2cee06246c24269',
-        fromDecimal: '6',
-        fromChain: 'FSN',
-        toTokenAddress: '0xb712d62fe84258292d1961b5150a19bc4ab49026',
-        toDecimal: '18',
-        toChain: 'ETH',
+        fromAmount: '10000000000',
+        fromTokenAddress: 'CUSDT',
+        fromDecimal: '8',
+        fromChain: 'KAS',
+        toTokenAddress: 'QEQE',
+        toDecimal: '8',
+        toChain: 'KAS'
     }
     const result = await chaingeWorkbench.getAggregateQuote(params, '0x42a6685ef29886Cbcb595Aa903f00dea0d1787d8')
     console.log('Aggregate Quote Result:', result)
